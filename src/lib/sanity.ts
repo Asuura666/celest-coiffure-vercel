@@ -37,6 +37,12 @@ const query = `*[_type == "siteSettings" && _id == "siteSettings"][0]{
   }
 }`;
 
+function withoutNulls<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== null && item !== undefined)
+  ) as Partial<T>;
+}
+
 export async function getSiteData(): Promise<SiteData> {
   if (!client) return fallbackSiteData;
 
@@ -49,9 +55,11 @@ export async function getSiteData(): Promise<SiteData> {
 
     if (!data) return fallbackSiteData;
 
+    const cleanData = withoutNulls(data);
+
     return {
       ...fallbackSiteData,
-      ...data,
+      ...cleanData,
       services:
         data.services && data.services.length > 0
           ? data.services
