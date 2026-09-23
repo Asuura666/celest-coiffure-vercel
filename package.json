@@ -1,0 +1,29 @@
+{
+  "name": "celest-coiffure-vercel",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sanity/vision": "latest",
+    "@vercel/analytics": "latest",
+    "@vercel/speed-insights": "latest",
+    "next": "16.3.6",
+    "next-sanity": "latest",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "resend": "latest",
+    "sanity": "latest",
+    "styled-components": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest"
+  }
+}
