@@ -31,8 +31,16 @@ export async function POST(request: Request) {
   const from = process.env.RESEND_FROM_EMAIL;
 
   if (!apiKey || !to || !from) {
+    const missing = [
+      !apiKey ? "RESEND_API_KEY" : null,
+      !to ? "CONTACT_TO_EMAIL" : null,
+      !from ? "RESEND_FROM_EMAIL" : null,
+    ].filter(Boolean);
+
+    console.error("Contact service not configured", { missing });
+
     return NextResponse.json(
-      { error: "Contact service not configured" },
+      { error: "Contact service not configured", missing },
       { status: 503 }
     );
   }
