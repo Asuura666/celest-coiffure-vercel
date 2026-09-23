@@ -101,7 +101,7 @@ RESEND_FROM_EMAIL=
 CONTACT_TO_EMAIL=
 ```
 
-Les variables Resend sont déjà présentes dans Vercel via l'intégration, mais le flux e-mail doit encore être testé de bout en bout et le domaine d'envoi doit être vérifié avant mise en production réelle.
+Le flux Resend a été testé de bout en bout. Attention : l'intégration Vercel peut ne pas injecter correctement `RESEND_API_KEY` dans le runtime du projet. Toujours vérifier explicitement sa présence dans les Environment Variables du projet après installation.
 
 ## 5. Configuration Sanity
 
@@ -337,7 +337,7 @@ Le code inclut :
 - `InstagramClick`
 - `ContactSubmission`
 
-État : instrumentation dans le code, activation / validation dashboard Vercel encore à confirmer.
+État : **Vercel Web Analytics validé le 23/09/2026**. Les visiteurs et pages vues remontent correctement dans le dashboard Vercel. Les événements personnalisés sont instrumentés dans le code, mais leur utilisation en production dépend du plan Vercel retenu.
 
 Les Analytics restent anonymes : ils ne doivent pas être utilisés comme une base de leads identifiés.
 
@@ -405,10 +405,85 @@ Corrections :
 
 **Solution :** filtrer les `null` / `undefined` avant la fusion.
 
+### Formulaire en 503 — `Contact service not configured`
+
+**Symptôme :** `POST /api/contact` répond 503.
+
+**Cause validée :** une ou plusieurs variables d'environnement Resend ne sont pas disponibles dans le runtime de la Function.
+
+**Diagnostic ajouté :** la Function loggue uniquement le **nom** des variables manquantes, jamais leur valeur.
+
+Variables obligatoires :
+
+```text
+RESEND_API_KEY
+RESEND_FROM_EMAIL
+CONTACT_TO_EMAIL
+```
+
+**À retenir :**
+
+1. vérifier les variables au niveau **du projet Vercel**, pas seulement l'intégration Marketplace ;
+2. `RESEND_API_KEY` doit être de type Secret ;
+3. après toute modification d'une Environment Variable, créer un **nouveau deployment** ;
+4. tester l'URL du nouveau deployment ou l'URL stable de production, pas une ancienne URL immuable.
+
+### Resend 403 — `You can only send testing emails to your own email address`
+
+**Symptôme :** la Function fonctionne, contacte Resend, mais reçoit un 403 `validation_error`.
+
+**Cause :** avec `onboarding@resend.dev`, Resend est en mode test et limite les destinataires tant qu'aucun domaine n'est vérifié.
+
+**Solution POC validée :**
+
+- `RESEND_FROM_EMAIL=Celest Coiffure <onboarding@resend.dev>`
+- `CONTACT_TO_EMAIL` = adresse autorisée du compte Resend
+- utiliser cette même adresse comme destinataire pendant le test
+
+Pour la production :
+
+- vérifier un domaine du client dans Resend ;
+- configurer SPF / DKIM ;
+- utiliser une adresse du domaine vérifié comme expéditeur ;
+- ne pas dépendre de `resend.dev`.
+
+### Analytics affiche 0 visiteur
+
+**Symptôme :** Vercel Analytics reste sur l'écran Get Started ou affiche 0.
+
+**Vérifications :**
+
+- `@vercel/analytics` installé ;
+- `<Analytics />` présent dans le layout ;
+- site redéployé ;
+- visiter réellement l'URL de production ;
+- désactiver temporairement un bloqueur de contenu si nécessaire.
+
+**Validation :** le POC a remonté correctement visiteurs, pages vues et pages visitées.
+
+### Ancienne URL Vercel testée par erreur
+
+Les URL contenant un hash de deployment sont **immuables**.
+
+Exemple :
+
+```text
+celest-coiffure-vercel-xxxxxxxxx-ilane1.vercel.app
+```
+
+Un nouveau push GitHub ne modifie jamais cette URL.
+
+Toujours vérifier :
+
+- le dernier deployment marqué `Production` ;
+- ou l'URL stable du projet.
+
+
 ## 14. Prochaines étapes
 
 - [x] tester le formulaire Resend de bout en bout ;
-- vérifier / activer Analytics et Speed Insights ;
+- [x] vérifier / activer Vercel Web Analytics ;
+- valider Speed Insights et les événements personnalisés sur le plan Vercel retenu ;
 - compléter les mentions légales et confidentialité ;
 - migrer les vrais contenus et images Celest dans Sanity ;
 - améliorer le design ;
@@ -426,6 +501,92 @@ Quelques corrections structurantes :
 - `ca26cc1` — désactivation du cache pendant validation
 - `ca76aa3` — requête explicite du singleton
 - `0496496` — conservation des fallbacks pour les champs Sanity vides
+
+
+## 16. Runbook anti-erreurs — nouveau client Site Web
+
+Suivre cet ordre pour chaque nouveau site.
+
+### A. Création
+
+1. créer / cloner le template GitHub ;
+2. importer le repository dans Vercel ;
+3. vérifier que le premier build est `Ready` ;
+4. utiliser l'URL stable du projet pour les tests courants.
+
+### B. Sanity
+
+1. connecter/créer un projet Sanity ;
+2. créer le dataset `production` ;
+3. vérifier :
+   - `NEXT_PUBLIC_SANITY_PROJECT_ID`
+   - `NEXT_PUBLIC_SANITY_DATASET=production`
+4. conserver le Studio embarqué sur `/studio` avec `basePath: "/studio"` ;
+5. configurer les CORS du domaine Vercel ;
+6. si le bouton Vercel boucle vers le dashboard Sanity, se connecter via GitHub/Google avec le compte autorisé ;
+7. utiliser un singleton `siteSettings`, jamais une liste libre pour les paramètres globaux ;
+8. tester une publication avant de continuer.
+
+### C. Contenu / fallback
+
+Le frontend doit :
+
+- viser explicitement `_id == "siteSettings"` ;
+- tolérer un document Sanity partiellement rempli ;
+- ne jamais laisser `null` écraser une valeur de fallback ;
+- conserver un fallback local suffisant pour afficher le site si Sanity est indisponible.
+
+### D. Resend
+
+1. installer / connecter Resend ;
+2. vérifier manuellement les trois variables runtime :
+   - `RESEND_API_KEY`
+   - `RESEND_FROM_EMAIL`
+   - `CONTACT_TO_EMAIL`
+3. faire un **redeploy après toute modification** de variable ;
+4. pour un POC sans domaine : utiliser `onboarding@resend.dev` et un destinataire autorisé ;
+5. pour la production : vérifier le domaine du client et SPF/DKIM ;
+6. contrôler les erreurs retournées par `resend.emails.send()`, ne jamais afficher un faux succès ;
+7. vérifier l'envoi dans Resend > Emails.
+
+### E. Analytics
+
+1. conserver `<Analytics />` dans le layout ;
+2. conserver Speed Insights si souhaité ;
+3. visiter le site après déploiement pour générer les premières données ;
+4. vérifier visiteurs et pages vues dans Vercel ;
+5. instrumenter les conversions avec des noms stables :
+   - `PlanityClick`
+   - `PhoneClick`
+   - `InstagramClick`
+   - `ContactSubmission`
+6. ne jamais considérer Analytics comme une base de leads identifiés ;
+7. prévoir le futur portail client pour afficher ces métriques via l'API Analytics.
+
+### F. Mise en production
+
+Avant de brancher le domaine réel :
+
+- contenu final validé ;
+- responsive validé ;
+- CMS validé ;
+- formulaire validé ;
+- emails validés ;
+- Analytics validé ;
+- réservation externe validée ;
+- mentions légales / confidentialité complètes ;
+- propriétaire du domaine identifié ;
+- stratégie de transfert/sortie client connue.
+
+### G. Principe d'architecture à ne pas casser
+
+Le socle Site Web doit rester :
+
+```text
+GitHub + Vercel + Sanity + Resend + service de réservation externe
+```
+
+Ne pas réintroduire VPS, Docker, PostgreSQL, n8n ou autre infrastructure persistante dans l'offre standard sauf besoin réellement justifié et facturé séparément.
 
 ---
 
