@@ -18,6 +18,32 @@ export default defineConfig({
   basePath: "/studio",
   projectId,
   dataset,
-  plugins: [structureTool(), visionTool()],
+  plugins: [
+    structureTool({
+      structure: (S) =>
+        S.list()
+          .title("Content")
+          .items([
+            S.listItem()
+              .title("Contenu du site")
+              .id("siteSettings")
+              .child(
+                S.document()
+                  .schemaType("siteSettings")
+                  .documentId("siteSettings")
+                  .title("Contenu du site")
+              ),
+          ]),
+    }),
+    visionTool(),
+  ],
   schema: { types: schemaTypes },
+  document: {
+    actions: (prev, context) =>
+      context.schemaType === "siteSettings"
+        ? prev.filter(
+            ({ action }) => action !== "duplicate" && action !== "delete"
+          )
+        : prev,
+  },
 });
