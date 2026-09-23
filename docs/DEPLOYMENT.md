@@ -1,63 +1,141 @@
 # Déploiement Vercel — Celest
 
+> État du POC validé le 23/09/2026.  
+> Voir aussi `docs/ARCHITECTURE-CONFIGURATION.md` pour l'architecture complète, les incidents rencontrés et les choix d'exploitation.
+
 ## 1. Importer le repo dans Vercel
 
 - New Project
 - Importer `Asuura666/celest-coiffure-vercel`
 - Framework détecté : Next.js
-- Déployer une première fois
+- Root Directory : `./`
+- Build Command : défaut
+- Output Directory : défaut
 
-Le site fonctionne immédiatement avec les contenus de repli locaux.
+Le site peut démarrer avec les contenus locaux de fallback.
 
-## 2. Activer Sanity
+## 2. Connecter Sanity
 
-Créer un projet Sanity puis ajouter dans Vercel :
+L'intégration Sanity peut être ajoutée directement depuis Vercel Marketplace.
 
-- `NEXT_PUBLIC_SANITY_PROJECT_ID`
-- `NEXT_PUBLIC_SANITY_DATASET=production`
+Variables nécessaires au code :
 
-Redéployer puis ouvrir `/studio`.
+```env
+NEXT_PUBLIC_SANITY_PROJECT_ID=
+NEXT_PUBLIC_SANITY_DATASET=production
+```
 
-Créer un document **Contenu du site** et renseigner les champs. Le frontend lit Sanity avec un cache de 60 secondes. Aucun serveur ni base PostgreSQL à maintenir.
+Le projet actuel utilise :
 
-## 3. Activer le formulaire
+- projet Sanity : `project-pme`
+- dataset : `production`
 
-Créer/configurer Resend et vérifier un domaine d'envoi. Ajouter :
+Le Studio est **embarqué dans Next.js** à l'adresse :
 
-- `RESEND_API_KEY`
-- `RESEND_FROM_EMAIL`
-- `CONTACT_TO_EMAIL`
+`/studio`
 
-Le formulaire utilise une Vercel Function (`/api/contact`) et envoie :
-1. la demande au salon ;
-2. un accusé de réception automatique au visiteur.
+Il n'est donc pas nécessaire de déployer un Studio séparé chez Sanity. La page Sanity > Studios peut rester vide.
 
-Aucun n8n n'est nécessaire.
+### CORS
 
-## 4. Analytics
+Autoriser les origins Vercel utilisées par le Studio et le développement local.
 
-Activer Web Analytics et Speed Insights dans le projet Vercel.
+### Authentification
 
-Événements présents dans le code :
+Pendant le POC, la connexion via **GitHub** a fonctionné correctement. Le bouton Vercel renvoyait vers l'interface Marketplace au lieu du Studio.
+
+## 3. Créer / éditer le contenu
+
+Dans `/studio` :
+
+- ouvrir **Contenu du site** ;
+- renseigner les champs ;
+- cliquer sur **Publish**.
+
+Le document est un singleton d'ID :
+
+`siteSettings`
+
+Le frontend interroge explicitement cet ID.
+
+Pendant la phase de validation, le contenu est lu sans cache :
+
+- `useCdn: false`
+- `cache: "no-store"`
+
+Ainsi une publication Sanity doit être immédiatement visible sur le site.
+
+## 4. Resend / formulaire
+
+Variables :
+
+```env
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
+CONTACT_TO_EMAIL=
+```
+
+Le formulaire utilise la Vercel Function :
+
+`/api/contact`
+
+Elle doit :
+
+1. envoyer la demande au salon ;
+2. envoyer un accusé de réception au visiteur.
+
+Le code est en place. Le test e-mail réel reste à effectuer avant mise en production.
+
+## 5. Analytics
+
+Le code inclut :
+
+- Vercel Web Analytics
+- Speed Insights
+
+Événements présents :
+
 - `PlanityClick`
 - `PhoneClick`
 - `InstagramClick`
 - `ContactSubmission`
 
-Les événements personnalisés nécessitent une offre Vercel compatible.
+Vérifier leur activation et leur remontée dans le dashboard Vercel.
 
-## 5. Domaine
+## 6. URLs Vercel
 
-Le domaine doit rester la propriété du client. Ajouter `celest-coiffure.fr` au projet Vercel uniquement lorsque la nouvelle version a été validée sur l'URL de preview.
+Chaque deployment possède une URL immuable avec un identifiant aléatoire.
 
-## Principe d'exploitation
+Pour tester la version de production courante, utiliser l'URL stable du projet :
+
+`https://celest-coiffure-vercel-ilane1.vercel.app`
+
+ou vérifier dans **Deployments** que le commit voulu est marqué **Production**.
+
+## 7. Domaine final
+
+Le domaine doit rester la propriété du client.
+
+Ne brancher `celest-coiffure.fr` qu'après :
+
+- validation complète du contenu ;
+- validation mobile / desktop ;
+- test formulaire ;
+- vérification Analytics ;
+- mentions légales / confidentialité complètes ;
+- validation de Planity.
+
+## 8. Principe d'exploitation
 
 Ce projet ne doit dépendre d'aucun VPS personnel :
+
 - pas de Docker
 - pas de nginx
 - pas de PostgreSQL
 - pas de systemd
-- pas de n8n
+- pas de n8n dans le socle
 - pas de réservation auto-hébergée
 
 Planity reste le système de réservation.
+
+Le mode « service géré » signifie : **gestion du projet Vercel et du template, pas gestion d'un serveur client**.
