@@ -297,7 +297,7 @@ Protection minimale déjà présente :
 - longueur de message limitée
 - aucune base de données
 
-État : **code en place, test réel Resend encore à effectuer**.
+État : **test réel Resend validé le 23/09/2026** avec `onboarding@resend.dev` et l'adresse du compte Resend comme destinataire de test. Sans domaine vérifié, Resend limite l'envoi aux adresses autorisées de test.
 
 ## 10. Analytics
 
@@ -383,7 +383,7 @@ Corrections :
 
 ## 14. Prochaines étapes
 
-- tester le formulaire Resend de bout en bout ;
+- [x] tester le formulaire Resend de bout en bout ;
 - vérifier / activer Analytics et Speed Insights ;
 - compléter les mentions légales et confidentialité ;
 - migrer les vrais contenus et images Celest dans Sanity ;
