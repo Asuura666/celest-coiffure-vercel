@@ -299,6 +299,30 @@ Protection minimale déjà présente :
 
 État : **test réel Resend validé le 23/09/2026** avec `onboarding@resend.dev` et l'adresse du compte Resend comme destinataire de test. Sans domaine vérifié, Resend limite l'envoi aux adresses autorisées de test.
 
+## 9.1. Personnalisation des emails
+
+Les emails Resend ne doivent pas rester en texte brut en production.
+
+Le template cible doit permettre, par client :
+
+- logo
+- couleurs de marque
+- nom de l'entreprise
+- texte personnalisé
+- récapitulatif de la demande
+- bouton CTA (Planity, prise de rendez-vous, devis, etc.)
+- téléphone / adresse / réseaux sociaux
+- footer et mentions utiles
+
+Deux modèles sont prévus :
+
+1. **Notification entreprise** : email reçu par le commerçant avec les informations du prospect.
+2. **Accusé de réception client** : email HTML brandé confirmant la bonne réception de la demande.
+
+L'objectif est d'en faire un composant réutilisable dans le futur template générique de la Partie Site Web, alimenté par la configuration du client.
+
+État : **à implémenter après validation complète du POC**.
+
 ## 10. Analytics
 
 Le code inclut :
