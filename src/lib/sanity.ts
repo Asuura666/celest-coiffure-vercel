@@ -11,7 +11,7 @@ const client = projectId
       projectId,
       dataset,
       apiVersion: "2026-09-01",
-      useCdn: true,
+      useCdn: false,
     })
   : null;
 
@@ -44,7 +44,7 @@ export async function getSiteData(): Promise<SiteData> {
     const data = await client.fetch<Partial<SiteData> | null>(
       query,
       {},
-      { next: { revalidate: 60 } }
+      { cache: "no-store" }
     );
 
     if (!data) return fallbackSiteData;
