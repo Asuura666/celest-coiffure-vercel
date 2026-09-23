@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
   const resend = new Resend(apiKey);
 
-  await resend.emails.send({
+  const salonEmail = await resend.emails.send({
     from,
     to,
     replyTo: email,
@@ -47,7 +47,12 @@ export async function POST(request: Request) {
     text: `Nom : ${name}\nE-mail : ${email}\n\n${message}`,
   });
 
-  await resend.emails.send({
+  if (salonEmail.error) {
+    console.error("Resend salon email error", salonEmail.error);
+    return NextResponse.json({ error: "Email delivery failed" }, { status: 502 });
+  }
+
+  const confirmationEmail = await resend.emails.send({
     from,
     to: email,
     subject: "Celest Coiffure — nous avons bien reçu votre message",
@@ -57,7 +62,15 @@ export async function POST(request: Request) {
       ",\n\nMerci pour votre message. Il a bien été transmis au salon Celest Coiffure. Nous revenons vers vous dès que possible.\n\nPour une réservation, utilisez directement Planity.\n\nCelest Coiffure",
   });
 
+  if (confirmationEmail.error) {
+    console.error("Resend confirmation email error", confirmationEmail.error);
+  }
+
   await track("ContactSubmission", { source: "website" }).catch(() => undefined);
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    salonEmailId: salonEmail.data?.id ?? null,
+    confirmationSent: !confirmationEmail.error,
+  });
 }
