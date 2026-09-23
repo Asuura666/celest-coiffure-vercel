@@ -15,7 +15,7 @@ const client = projectId
     })
   : null;
 
-const query = `*[_type == "siteSettings"][0]{
+const query = `*[_type == "siteSettings" && _id == "siteSettings"][0]{
   heroTitle,
   heroEyebrow,
   heroText,
